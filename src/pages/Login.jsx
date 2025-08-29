@@ -5,7 +5,7 @@ import { useAuth } from "../utils/idb";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -16,8 +16,8 @@ const Login = () => {
   const [logginIn, setLogginIn] = useState(false);
   const handleSubmit = async () => {
     
-      if (!email) {
-        toast.error("Pls Enter Email");
+      if (!username) {
+        toast.error("Pls Enter Username");
         return;
       }
       if (!password) {
@@ -30,7 +30,7 @@ const Login = () => {
         setLogginIn(true);
       let payload = "";
       
-        payload = { email, password };
+        payload = { username, password };
       
 
       const response = await fetch("https://instacrm.rapidcollaborate.com/test/api/watilogin", {
@@ -46,7 +46,7 @@ const Login = () => {
         login(data.user);
          navigate("/");
       } else {
-        toast.error("Invalid Email or Password" || data.message);
+        toast.error(data.message || "Invalid Username or Password" );
       }
     } catch (e) {
         console.log(e)
@@ -69,11 +69,11 @@ const Login = () => {
           {/* <label className="block text-[13px] font-medium">Email</label> */}
           <div className="relative">
             <input
-              type="email"
+              type="text"
               required
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-2 py-1.5 text-[13px] border border-gray-300 rounded  
                 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
                 hover:border-gray-400 
