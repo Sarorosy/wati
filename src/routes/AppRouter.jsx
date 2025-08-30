@@ -16,7 +16,7 @@ export default function AppRouter() {
       <ScrollToTop />
        <SelectedUserProvider>
       <Routes>
-        {/* Public Restaurant Routes (NO layout) */}
+        
         <Route path="/login" element={<Login />} />
 
         <Route element={<PrivateRoute />}>

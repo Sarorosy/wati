@@ -3,9 +3,11 @@ import { useSelectedUser } from "../../utils/SelectedUserContext";
 import { useAuth } from "../../utils/idb";
 import { ListFilter, RefreshCcw, X } from "lucide-react";
 import { getStatus, statusOptions } from "../../helpers/CommonHelper";
+import Select from "react-select";
 
 const SideBar = () => {
   const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const { selectedUser, setSelectedUser } = useSelectedUser();
@@ -13,6 +15,7 @@ const SideBar = () => {
   // New states
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedCrmUser, setSelectedCrmUser] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchData = async (nopayload = false) => {
@@ -22,6 +25,7 @@ const SideBar = () => {
         payload = {
           search_keywords: "",
           update_status: "",
+          selected_user_id: selectedCrmUser,
           user_id: user?.id,
           user_name: user?.name,
           user_type: user?.user_type,
@@ -30,6 +34,7 @@ const SideBar = () => {
         payload = {
           search_keywords: searchTerm,
           update_status: statusFilter,
+          selected_user_id: selectedCrmUser,
           user_id: user?.id,
           user_name: user?.name,
           user_type: user?.user_type,
@@ -57,9 +62,39 @@ const SideBar = () => {
       setLoading(false);
     }
   };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(
+        "https://instacrm.rapidcollaborate.com/test/api/getusersforwati",
+        {
+          method: "GET",
+        }
+      );
+      const data = await res.json();
+      if (data.status) {
+        setAllUsers(data.data);
+      } else {
+        console.log(data.message || "Error fetching users");
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
   useEffect(() => {
     fetchData();
+    fetchUsers();
   }, []);
+
+  const options = allUsers.map((user) => ({
+    value: user.id,
+    label: user.name,
+  }));
+
+  const stOptions = statusOptions.map((status) => ({
+    value: status.id,
+    label: status.name,
+  }));
 
   return (
     <div className="w-full h-full bg-white border-r overflow-y-auto">
@@ -71,8 +106,9 @@ const SideBar = () => {
             <button
               onClick={() => {
                 setSearchTerm("");
-                setStatusFilter("")
-                fetchData(true);
+                setStatusFilter("");
+                setSelectedCrmUser(null);
+                fetchData(false);
               }}
               className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100"
             >
@@ -101,7 +137,7 @@ const SideBar = () => {
                 placeholder="Search by name, email, phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 f-11 border rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                className="flex-1 f-11 border border-gray-300 rounded px-3 py-1 text-sm focus:ring-none focus:outline-none "
               />
               <button
                 onClick={fetchData}
@@ -111,18 +147,36 @@ const SideBar = () => {
               </button>
             </div>
 
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full border rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:border-blue-300"
-            >
-              {statusOptions.map((status) => (
-                <option key={status.id} value={status.id}>
-                  {status.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center">
+              {/* Status Filter */}
+              <Select
+                className="w-full text-sm"
+                value={
+                  stOptions.find((opt) => opt.value === statusFilter) || null
+                }
+                onChange={(option) =>
+                  setStatusFilter(option ? option.value : "")
+                }
+                options={stOptions}
+                placeholder="Select Status"
+                isClearable
+              />
+              {(user?.user_type == "admin" ||
+                user?.user_type == "sub-admin") && (
+                <Select
+                  className="w-full text-sm"
+                  value={
+                    options.find((opt) => opt.value === selectedCrmUser) || null
+                  }
+                  onChange={(option) =>
+                    setSelectedCrmUser(option ? option.value : "")
+                  }
+                  options={options}
+                  placeholder="Select User"
+                  isClearable
+                />
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -142,12 +196,17 @@ const SideBar = () => {
               <p className="text-xs bg-gray-300 w-52 mt-1 truncate h-2 animate-pulse"></p>
             </div>
           </li>
-        ) : (
+        ) : users.length > 0 ? (
+          users.length > 0 &&
           users.map((user) => (
             <li
               key={user.id}
               onClick={() => setSelectedUser(user)}
-              className={`flex items-center gap-3 px-4 py-3 ${(selectedUser?.id == user?.id) ? "bg-gray-200 hover:bg-gray-200" : ""} cursor-pointer hover:bg-gray-100 transition`}
+              className={`flex items-center gap-3 px-4 py-3 ${
+                selectedUser?.id == user?.id
+                  ? "bg-gray-200 hover:bg-gray-200"
+                  : ""
+              } cursor-pointer hover:bg-gray-100 transition`}
             >
               {/* Profile Circle with first letter */}
               <div className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
@@ -171,6 +230,10 @@ const SideBar = () => {
               </div>
             </li>
           ))
+        ) : (
+          <li className="px-4 py-3 text-sm text-gray-500 italic">
+            No queries found
+          </li>
         )}
       </ul>
     </div>

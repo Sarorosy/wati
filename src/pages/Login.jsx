@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { Eye, EyeOff, LogInIcon, MailIcon } from "lucide-react";
 import { useAuth } from "../utils/idb";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -11,11 +12,21 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const [searchParams] = useSearchParams();
+  const uname = searchParams.get("uname"); // get ?uname= value
+
+  useEffect(() => {
+    if (uname) {
+      setUsername(uname); // set username from query
+      autoLogin(uname);
+    }
+  }, [uname]);
+
   
 
   const [logginIn, setLogginIn] = useState(false);
-  const handleSubmit = async () => {
-    
+   const handleSubmit = async (isAuto = false, un=null) => {
+    if (!isAuto) {
       if (!username) {
         toast.error("Pls Enter Username");
         return;
@@ -24,35 +35,41 @@ const Login = () => {
         toast.error("Pls Enter Password");
         return;
       }
-    
+    }
 
     try {
-        setLogginIn(true);
+      setLogginIn(true);
       let payload = "";
-      
-        payload = { username, password };
-      
 
-      const response = await fetch("https://instacrm.rapidcollaborate.com/test/api/watilogin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      payload = { username : un ?? username, password, autologin: isAuto, };
+
+      const response = await fetch(
+        "https://instacrm.rapidcollaborate.com/test/api/watilogin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await response.json();
       if (data.status) {
         toast.success("Login success");
         login(data.user);
-         navigate("/");
+        navigate("/");
       } else {
-        toast.error(data.message || "Invalid Username or Password" );
+        toast.error(data.message || "Invalid Username or Password");
       }
     } catch (e) {
-        console.log(e)
-    }finally{
-        setLogginIn(false)
+      console.log(e);
+    } finally {
+      setLogginIn(false);
     }
+  };
+
+  const autoLogin = (uname) => {
+    handleSubmit(true, uname);
   };
 
   return (
@@ -80,7 +97,7 @@ const Login = () => {
                 active:border-blue-600"
             />
             <div className="absolute inset-y-0 right-2 flex items-center text-gray-500">
-             <MailIcon size={15}  />
+              <MailIcon size={15} />
             </div>
           </div>
         </div>
@@ -130,7 +147,6 @@ const Login = () => {
             {logginIn ? "Logging.." : "Login"} <LogInIcon size={13} />
           </button>
         </div>
-
       </form>
     </div>
   );
