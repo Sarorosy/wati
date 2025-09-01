@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useSelectedUser } from "../../utils/SelectedUserContext";
 import { useAuth } from "../../utils/idb";
-import { ListFilter, RefreshCcw, X } from "lucide-react";
-import { getStatus, statusOptions } from "../../helpers/CommonHelper";
+import { ListFilter, MessageSquareDot, RefreshCcw, X } from "lucide-react";
+import {
+  getStatus,
+  markMessagesRead,
+  statusOptions,
+} from "../../helpers/CommonHelper";
 import Select from "react-select";
 
 const SideBar = () => {
@@ -17,8 +21,9 @@ const SideBar = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedCrmUser, setSelectedCrmUser] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [filterUnread, setFilterUnread] = useState(false);
 
-  const fetchData = async (nopayload = false) => {
+  const fetchData = async (nopayload = false, OnlyUnread = false) => {
     try {
       let payload = "";
       if (!nopayload) {
@@ -26,6 +31,7 @@ const SideBar = () => {
           search_keywords: "",
           update_status: "",
           selected_user_id: selectedCrmUser,
+          filterUnread: OnlyUnread,
           user_id: user?.id,
           user_name: user?.name,
           user_type: user?.user_type,
@@ -35,6 +41,7 @@ const SideBar = () => {
           search_keywords: searchTerm,
           update_status: statusFilter,
           selected_user_id: selectedCrmUser,
+          filterUnread: OnlyUnread,
           user_id: user?.id,
           user_name: user?.name,
           user_type: user?.user_type,
@@ -86,6 +93,17 @@ const SideBar = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (selectedUser?.id) {
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === selectedUser.id ? { ...u, wati_unread_count: 0 } : u
+        )
+      );
+      markMessagesRead(selectedUser.id).then((res) => {});
+    }
+  }, [selectedUser]);
+
   const options = allUsers.map((user) => ({
     value: user.id,
     label: user.name,
@@ -105,12 +123,30 @@ const SideBar = () => {
           <div className="flex items-center space-x-1">
             <button
               onClick={() => {
+                const newValue = !filterUnread;
+                setFilterUnread(newValue);
+                fetchData(true, newValue);
+              }}
+              className={`px-3 py-1 text-sm border rounded-lg  ${
+                filterUnread ? "bg-green-900 text-white" : "hover:bg-green-100"
+              }`}
+              data-tooltip-id="my-tooltip"
+              data-tooltip-content={
+                filterUnread ? "Show all queries" : "Show only unread queries"
+              }
+            >
+              <MessageSquareDot size={14} className={``} />
+            </button>
+            <button
+              onClick={() => {
                 setSearchTerm("");
                 setStatusFilter("");
                 setSelectedCrmUser(null);
                 fetchData(false);
               }}
               className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100"
+              data-tooltip-id="my-tooltip"
+              data-tooltip-content="Refresh"
             >
               <RefreshCcw
                 size={14}
@@ -120,6 +156,10 @@ const SideBar = () => {
             {/* Toggle Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
+              data-tooltip-id="my-tooltip"
+              data-tooltip-content={
+                showFilters ? "Hide filters" : "Show filters"
+              }
               className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100"
             >
               {showFilters ? <X size={14} /> : <ListFilter size={14} />}
@@ -197,11 +237,12 @@ const SideBar = () => {
             </div>
           </li>
         ) : users.length > 0 ? (
-          users.length > 0 &&
           users.map((user) => (
             <li
               key={user.id}
-              onClick={() => setSelectedUser(user)}
+              onClick={() => {
+                setSelectedUser(user);
+              }}
               className={`flex items-center gap-3 px-4 py-3 ${
                 selectedUser?.id == user?.id
                   ? "bg-gray-200 hover:bg-gray-200"
@@ -213,21 +254,26 @@ const SideBar = () => {
                 {user.name?.charAt(0).toUpperCase()}
               </div>
 
-              {/* User Name */}
+              {/* User Name + phone/email */}
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate flex items-center ">
+                <p className="text-sm font-medium text-gray-900 truncate flex items-center">
                   <span className="mr-2">
                     {user.name?.split("\n")[0]?.slice(0, 20)}
                     {user.name?.length > 20 ? "..." : ""}
                   </span>
-
                   {getStatus(user?.update_status)}
                 </p>
-                {/* optional: add email or phone */}
                 <p className="text-xs text-gray-500 truncate">
                   {user.phone || user.email}
                 </p>
               </div>
+
+              {/* Unread Count Badge */}
+              {user.wati_unread_count > 0 && (
+                <span className="ml-auto px-2 py-1 text-xs font-bold rounded-full bg-[#588157] text-white">
+                  {user.wati_unread_count}
+                </span>
+              )}
             </li>
           ))
         ) : (

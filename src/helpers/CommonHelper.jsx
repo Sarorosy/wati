@@ -115,3 +115,27 @@ export function formatMessage(text) {
 
   return <span dangerouslySetInnerHTML={{ __html: parts }} />;
 }
+
+
+export async function markMessagesRead(query_id) {
+  if (!query_id) return { status: false, message: "Invalid query_id" };
+
+  try {
+    const response = await fetch(
+      "https://instacrm.rapidcollaborate.com/test/api/readallwatimessages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query_id }),
+      }
+    );
+
+    const result = await response.json();
+    return result; // { status: true, message: "Unread messages marked..." }
+  } catch (error) {
+    console.error("Error marking messages as read:", error);
+    return { status: false, message: error.message };
+  }
+}
