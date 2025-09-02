@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { AlertTriangle, Send, X, MessageSquare, Paperclip } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  AlertTriangle,
+  Send,
+  X,
+  MessageSquare,
+  Paperclip,
+  Smile,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { normalizePhoneNumber } from "../../../helpers/CommonHelper";
 import SendFileModal from "./SendFileModal";
 import toast from "react-hot-toast";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+
+// import "emoji-mart/css/emoji-mart.css";
 
 const ChatSend = ({ setMessages, selectedUser }) => {
   const [text, setText] = useState("");
@@ -14,14 +25,34 @@ const ChatSend = ({ setMessages, selectedUser }) => {
   const [isOffcanvasOpen, setIsOffcanvasOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+  const [isEmojiModalOpen, setIsEmojiModalOpen] = useState(false);
+  const pickerRef = useRef(null);
 
   useEffect(() => {
     fetchTemplates();
   }, []);
 
   useEffect(() => {
-    console.log(selectedTemplate);
+    //console.log(selectedTemplate);
   }, [selectedTemplate]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setIsEmojiModalOpen(false);
+      }
+    }
+
+    if (isEmojiModalOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isEmojiModalOpen]);
 
   // Extract {{placeholders}}
   const extractPlaceholders = (body) => {
@@ -192,14 +223,22 @@ const ChatSend = ({ setMessages, selectedUser }) => {
 
         const data = await res.json();
 
-        if(data?.message == "Ticket has been expired."){
-          toast.error("Session has been expired, Please send a template message first");
+        if (data?.message == "Ticket has been expired.") {
+          toast.error(
+            "Session has been expired, Please send a template message first"
+          );
         }
 
         console.log("Session message sent ✅", data);
 
         // Update chat UI locally also
-        const newMsg = { id: Date.now(), from: "me", type: "text", text, statusString: "DELIVERED" };
+        const newMsg = {
+          id: Date.now(),
+          from: "me",
+          type: "text",
+          text,
+          statusString: "DELIVERED",
+        };
         setMessages((prev) => [...prev, newMsg]);
       } catch (error) {
         console.error("Error sending session message:", error);
@@ -297,11 +336,46 @@ const ChatSend = ({ setMessages, selectedUser }) => {
         )}
 
         <button
+          onClick={() => setIsEmojiModalOpen(true)}
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          <Smile size={15} />
+        </button>
+        <button
           onClick={() => setIsFileModalOpen(true)}
           className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           <Paperclip size={15} />
         </button>
+        {isEmojiModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+            className="absolute bottom-14 right-16 z-50"
+            ref={pickerRef}
+          >
+            <div className="relative">
+              <button
+                onClick={() => setIsEmojiModalOpen(false)}
+                className="absolute top-1 right-1 p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+              >
+                <X size={14} />
+              </button>
+
+              <Picker
+                onEmojiSelect={(emoji) => {
+                  setText((prev) => prev + emoji.native);
+                  setIsEmojiModalOpen(false);
+                }}
+                data={data}
+                title="Pick emoji"
+                emoji="point_up"
+              />
+            </div>
+          </motion.div>
+        )}
         <button
           onClick={handleSend}
           disabled={messageType === "template" && !selectedTemplate}
