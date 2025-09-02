@@ -223,13 +223,13 @@ const ChatSend = ({ setMessages, selectedUser }) => {
 
         const data = await res.json();
 
-        if (data?.message == "Ticket has been expired.") {
+        if (data?.message === "Ticket has been expired.") {
           toast.error(
-            "Session has been expired, Please send a template message first"
+            "The ticket has expired, or the user hasn't replied yet. Please wait until they respond."
           );
         }
 
-        console.log("Session message sent ✅", data);
+        console.log("Session message sent", data);
 
         // Update chat UI locally also
         const newMsg = {
