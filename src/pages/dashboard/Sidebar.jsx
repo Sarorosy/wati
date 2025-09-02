@@ -48,16 +48,16 @@ const SideBar = () => {
         };
       }
       setLoading(true);
-      const response = await fetch(
-        "https://instacrm.rapidcollaborate.com/test/api/watiqueries",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+
+      const apiUrl = "https://loopback-skci.onrender.com/api/wati/queries";
+      //const apiUrl = "https://instacrm.rapidcollaborate.com/test/api/watiqueries"
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const result = await response.json();
       if (result.status && result.data) {
@@ -72,12 +72,11 @@ const SideBar = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(
-        "https://instacrm.rapidcollaborate.com/test/api/getusersforwati",
-        {
-          method: "GET",
-        }
-      );
+      // const apiUrl = "https://instacrm.rapidcollaborate.com/test/api/getusersforwati";
+      const apiUrl = "https://loopback-skci.onrender.com/api/wati/allusers";
+      const res = await fetch(apiUrl, {
+        method: "GET",
+      });
       const data = await res.json();
       if (data.status) {
         setAllUsers(data.data);
@@ -100,7 +99,12 @@ const SideBar = () => {
           u.id === selectedUser.id ? { ...u, wati_unread_count: 0 } : u
         )
       );
-      markMessagesRead(selectedUser.id).then((res) => {});
+      if (
+        selectedUser?.wati_unread_count &&
+        selectedUser?.wati_unread_count > 0
+      ) {
+        markMessagesRead(selectedUser.id).then((res) => {});
+      }
     }
   }, [selectedUser]);
 

@@ -43,8 +43,11 @@ const Login = () => {
 
       payload = { username : un ?? username, password, autologin: isAuto, };
 
+      // const apiUrl = "https://instacrm.rapidcollaborate.com/test/api/watilogin";
+      const apiUrl = "https://loopback-skci.onrender.com/api/wati/login";
+
       const response = await fetch(
-        "https://instacrm.rapidcollaborate.com/test/api/watilogin",
+        apiUrl,
         {
           method: "POST",
           headers: {
